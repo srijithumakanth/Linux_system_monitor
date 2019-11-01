@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+
 #include "linux_parser.h"
 
 using std::stof;
@@ -67,7 +68,30 @@ vector<int> LinuxParser::Pids() {
 }
 
 // TODO: Read and return the system memory utilization
-float LinuxParser::MemoryUtilization() { return 0.0; }
+float LinuxParser::MemoryUtilization() {
+  float MemTotal, MemFree, MemUsed;
+  string key, value;
+  string line;
+  std::ifstream stream(kProcDirectory + kMeminfoFilename);
+  if (stream.is_open()) 
+  {
+    while(std::getline(stream, line))
+    {
+      std::istringstream linestream(line);
+      linestream >> key >> value;
+      if (key == "MemTotal:") 
+      {
+        MemTotal = std::stof(value);
+      }
+      else if (key == "MemFree:")
+      {
+        MemFree = std::stof(value);
+      }
+    }
+  }
+  MemUsed = MemTotal - MemFree;
+  return MemUsed/MemTotal;
+}
 
 // TODO: Read and return the system uptime
 long LinuxParser::UpTime() { return 0; }
