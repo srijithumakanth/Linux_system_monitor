@@ -104,7 +104,7 @@ long LinuxParser::UpTime()
   {
     std::getline(stream, line);
     std::istringstream linestream(line);
-    linestream >> insec >> idle;
+    linestream >> insec >> idle; // Idle process time, maybe useful later.
     return std::stol(insec); // Uptime in seconds
   }
 
