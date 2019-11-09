@@ -5,22 +5,13 @@
 
 #include "linux_parser.h"
 
+using std::ifstream;
+using std::istream_iterator;
+using std::istringstream;
 using std::stof;
 using std::string;
 using std::to_string;
 using std::vector;
-
-// Custom function to just get stream of strings given a path
-std::ifstream getStream(std::string path){
-    std::ifstream stream;
-    stream.open (path, std::ifstream::in);
-    if (!stream && !stream.is_open()){
-        stream.close();
-        throw std::runtime_error("Non - existing PID");
-    }
-    return stream;
-}
-
 
 // DONE: An example of how to read data from the filesystem
 string LinuxParser::OperatingSystem() {
@@ -114,17 +105,61 @@ long LinuxParser::UpTime() {
 }
 
 // TODO: Read and return the number of jiffies for the system
-long LinuxParser::Jiffies() { return 0; }
+long LinuxParser::Jiffies() {
+    std::string value, line;
+    std::ifstream stream (LinuxParser::kProcDirectory + LinuxParser::kStatFilename);
+    getline(stream, line);
+    std::istringstream buf (line);
+    std::istream_iterator<string> beg(buf), end;
+    std::vector<string> values(beg, end);
+
+    long systemalltime = stol(values[3]) + stol(values[6]) + stol(values[7]); // system + irq + softirq
+    long virtualtime = stol(values[9]) + stol(values[10]); // guest + guest_nice
+    long stealTime = stof(values[8]); // steal
+
+    long totalJiffes = LinuxParser::ActiveJiffies() + LinuxParser::IdleJiffies() + systemalltime + virtualtime + stealTime;
+    
+    return totalJiffes;
+}
 
 // TODO: Read and return the number of active jiffies for a PID
 // REMOVE: [[maybe_unused]] once you define the function
 long LinuxParser::ActiveJiffies(int pid[[maybe_unused]]) { return 0; }
 
 // TODO: Read and return the number of active jiffies for the system
-long LinuxParser::ActiveJiffies() { return 0; }
+long LinuxParser::ActiveJiffies() {
+  string line, value;
+
+  std::ifstream stream (kProcDirectory + kStatFilename);
+  if (stream.is_open()) {
+    std::getline(stream, line);
+    istringstream buf(line);
+    istream_iterator<string> beg(buf), end;
+    vector<string> values(beg, end);
+
+    long usertime = stol(values[1]) - stol(values[9]);   // user - guest
+    long nicetime = stol(values[2]) - stol(values[10]);  // nice - guest_nice
+
+    return (usertime + nicetime);
+  }
+}
 
 // TODO: Read and return the number of idle jiffies for the system
-long LinuxParser::IdleJiffies() { return 0; }
+long LinuxParser::IdleJiffies() {
+  string line, value;
+
+  std::ifstream stream (kProcDirectory + kStatFilename);
+  if (stream.is_open()) {
+    std::getline(stream, line);
+    istringstream buf(line);
+    istream_iterator<string> beg(buf), end;
+    vector<string> values(beg, end);
+
+    long idlealltime = stol(values[4]) + stol(values[5]); // idle + iowait
+
+    return idlealltime;
+  }
+}
 
 // TODO: Read and return CPU utilization
 vector<string> LinuxParser::CpuUtilization() { return {}; }
@@ -133,36 +168,35 @@ vector<string> LinuxParser::CpuUtilization() { return {}; }
 int LinuxParser::TotalProcesses() {
   string line, key, value;
   int totalProcsRun;
-  std::ifstream stream = getStream(kProcDirectory + kStatFilename);
-  while (std::getline(stream, line)) 
-    {
+
+  std::ifstream stream (kProcDirectory + kStatFilename);
+  if (stream.is_open()) {
+    while (std::getline(stream, line)) {
       std::istringstream linestream(line);
       linestream >> key >> value;
-      if (key == "processes") 
-      {
+      if (key == "processes") {
         return totalProcsRun = std::stof(value);
       }
     }
   }
-
+}
 
 // TODO: Read and return the number of running processes
 int LinuxParser::RunningProcesses() {
   string line, key, value;
   int numProcsRun;
-  std::ifstream stream = getStream(kProcDirectory + kStatFilename);
-  while (std::getline(stream, line)) 
-    {
+
+  std::ifstream stream (kProcDirectory + kStatFilename);
+  if (stream.is_open()) {
+    while (std::getline(stream, line)) {
       std::istringstream linestream(line);
       linestream >> key >> value;
-      if (key == "procs_running") 
-      {
+      if (key == "procs_running") {
         return numProcsRun = std::stof(value);
       }
     }
   }
-
-
+}
 
 // TODO: Read and return the command associated with a process
 // REMOVE: [[maybe_unused]] once you define the function
