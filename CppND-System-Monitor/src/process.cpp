@@ -6,6 +6,7 @@
 
 #include "linux_parser.h"
 #include "process.h"
+#include "format.h"
 
 using std::string;
 using std::to_string;
@@ -55,7 +56,21 @@ string Process::User() {
 }
 
 // TODO: Return the age of this process (in seconds)
-long int Process::UpTime() { return 0; }
+long int Process::UpTime() {
+  std::ifstream stream(LinuxParser::kProcDirectory + to_string(pid_) +
+                       LinuxParser::kStatFilename);
+  
+  std::string line;
+  getline(stream, line);
+  std::istringstream buf (line);
+  std::istream_iterator<string> beg(buf), end;
+  std::vector<string> values(beg, end);
+
+  long int uptime = stol(values[15]);
+  long int uptime_in_sec = uptime/sysconf(_SC_CLK_TCK);
+  
+  return uptime_in_sec;
+}
 
 // TODO: Overload the "less than" comparison operator for Process objects
 // REMOVE: [[maybe_unused]] once you define the function
