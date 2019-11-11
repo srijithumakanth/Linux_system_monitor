@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
+#include "format.h"
 #include "linux_parser.h"
 #include "process.h"
-#include "format.h"
 
 using std::string;
 using std::to_string;
@@ -19,10 +19,41 @@ int Process::Pid() { return pid_; }
 float Process::CpuUtilization() { return 0; }
 
 // TODO: Return the command that generated this process
-string Process::Command() { return string(); }
+string Process::Command() {
+  std::ifstream stream(LinuxParser::kProcDirectory + to_string(pid_) +
+                       LinuxParser::kCmdlineFilename);
+
+  string line;
+  if (stream.is_open()) {
+    getline(stream, line);
+
+    return line;
+  }
+}
 
 // TODO: Return this process's memory utilization
-string Process::Ram() { return string(); }
+string Process::Ram() {
+  std::ifstream stream(LinuxParser::kProcDirectory + to_string(pid_) +
+                       LinuxParser::kStatusFilename);
+
+  string line, key, value;
+  int ramKb, ramMb;
+  if (stream.is_open())
+  {
+    while(getline(stream, line))
+    {
+      std::istringstream linestream(line);
+      linestream >> key >> value;
+      if(key == "VmSize:")
+      {
+        ramKb = stoi(value);
+      }
+    }
+  }
+  ramMb = ramKb / 1000;
+
+  return to_string(ramMb);
+}
 
 // TODO: Return the user (name) that generated this process
 string Process::User() {
@@ -32,7 +63,7 @@ string Process::User() {
   std::ifstream stream(LinuxParser::kProcDirectory + to_string(pid_) +
                        LinuxParser::kStatusFilename);
   if (stream.is_open()) {
-    while (std::getline(stream, line)) {
+    while (getline(stream, line)) {
       std::istringstream linestream(line);
       linestream >> key >> value;
       if (key == "Uid:") {
@@ -59,17 +90,19 @@ string Process::User() {
 long int Process::UpTime() {
   std::ifstream stream(LinuxParser::kProcDirectory + to_string(pid_) +
                        LinuxParser::kStatFilename);
-  
-  std::string line;
-  getline(stream, line);
-  std::istringstream buf (line);
-  std::istream_iterator<string> beg(buf), end;
-  std::vector<string> values(beg, end);
 
-  long int uptime = stol(values[15]);
-  long int uptime_in_sec = uptime/sysconf(_SC_CLK_TCK);
-  
-  return uptime_in_sec;
+  if (stream.is_open()) {
+    std::string line;
+    getline(stream, line);
+    std::istringstream buf(line);
+    std::istream_iterator<string> beg(buf), end;
+    std::vector<string> values(beg, end);
+
+    long int uptime = stol(values[21]);
+    long int uptime_in_sec = uptime / sysconf(_SC_CLK_TCK);
+
+    return uptime_in_sec;
+  }
 }
 
 // TODO: Overload the "less than" comparison operator for Process objects
