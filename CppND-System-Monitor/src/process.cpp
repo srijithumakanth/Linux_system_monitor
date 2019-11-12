@@ -15,7 +15,7 @@ using std::vector;
 int Process::Pid() { return pid_; }
 
 // TODO: Return this process's CPU utilization
-float Process::CpuUtilization() {
+float Process::CpuUtilization() const {
   double lastActive = 0, currentActive;
   double cpuFreq = sysconf(_SC_CLK_TCK);
 
@@ -24,11 +24,11 @@ float Process::CpuUtilization() {
                    ((LinuxParser::UpTime(pid_) / sysconf(_SC_CLK_TCK)));
 
   double delta = currentActive - lastActive;
-  float cpuUsage = 100 * ((delta / sysconf(_SC_CLK_TCK)) / seconds);
-
-  return cpuUsage;
+  float cpuUsage = ((delta / sysconf(_SC_CLK_TCK)) / seconds);
 
   lastActive = currentActive;
+  
+  return cpuUsage;
 }
 
 // TODO: Return the command that generated this process
@@ -45,4 +45,7 @@ long int Process::UpTime() { return LinuxParser::UpTime(pid_); }
 
 // TODO: Overload the "less than" comparison operator for Process objects
 // REMOVE: [[maybe_unused]] once you define the function
-bool Process::operator<(Process const& a[[maybe_unused]]) const { return true; }
+bool Process::operator<(const Process& a) const{
+return (this->CpuUtilization() < a.CpuUtilization());
+
+}

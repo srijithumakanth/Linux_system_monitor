@@ -94,15 +94,17 @@ float LinuxParser::MemoryUtilization() {
 long LinuxParser::UpTime() {
   string line;
   string insec, idle;
-
+  long sec;
+  
   std::ifstream stream(kProcDirectory + kUptimeFilename);
   if (stream.is_open()) {
     std::getline(stream, line);
     std::istringstream linestream(line);
     linestream >> insec >> idle;  // Idle process time, maybe useful later.
-    return std::stol(insec);      // Uptime in seconds
+    sec = std::stol(insec);
   }
-}
+  return sec;      // Uptime in seconds
+} 
 
 // TODO: Read and return the number of jiffies for the system
 long LinuxParser::Jiffies() {
@@ -128,24 +130,27 @@ long LinuxParser::Jiffies() {
 // REMOVE: [[maybe_unused]] once you define the function
 long LinuxParser::ActiveJiffies(int pid) {
   std::ifstream stream(kProcDirectory + to_string(pid) + kStatFilename);
+  
+  long totalTime;
+  if (stream.is_open())
+  {
+    std::string line;
+    getline(stream, line);
+    std::istringstream buf(line);
+    std::istream_iterator<string> beg(buf), end;
+    std::vector<string> values(beg, end);
 
-  std::string line;
-  getline(stream, line);
-  std::istringstream buf(line);
-  std::istream_iterator<string> beg(buf), end;
-  std::vector<string> values(beg, end);
-
-  long totalTime = stol(values[13]) + stol(values[14]);  // utime + stime
-  totalTime = totalTime + stol(values[15]) +
-              stol(values[16]);  // totaltime + cutime + cstime
-
+    totalTime = stol(values[13]) + stol(values[14]);  // utime + stime
+    totalTime = totalTime + stol(values[15]) +
+                stol(values[16]);  // totaltime + cutime + cstime
+  }
   return totalTime;
 }
 
 // TODO: Read and return the number of active jiffies for the system
 long LinuxParser::ActiveJiffies() {
   string line, value;
-
+  long usertime, nicetime;
   std::ifstream stream(kProcDirectory + kStatFilename);
   if (stream.is_open()) {
     std::getline(stream, line);
@@ -153,16 +158,16 @@ long LinuxParser::ActiveJiffies() {
     istream_iterator<string> beg(buf), end;
     vector<string> values(beg, end);
 
-    long usertime = stol(values[1]) - stol(values[9]);   // user - guest
-    long nicetime = stol(values[2]) - stol(values[10]);  // nice - guest_nice
-
-    return (usertime + nicetime);
+    usertime = stol(values[1]) - stol(values[9]);   // user - guest
+    nicetime = stol(values[2]) - stol(values[10]);  // nice - guest_nice
   }
+  return (usertime + nicetime);
 }
 
 // TODO: Read and return the number of idle jiffies for the system
 long LinuxParser::IdleJiffies() {
   string line, value;
+  long idlealltime;
 
   std::ifstream stream(kProcDirectory + kStatFilename);
   if (stream.is_open()) {
@@ -171,10 +176,9 @@ long LinuxParser::IdleJiffies() {
     istream_iterator<string> beg(buf), end;
     vector<string> values(beg, end);
 
-    long idlealltime = stol(values[4]) + stol(values[5]);  // idle + iowait
-
-    return idlealltime;
+    idlealltime = stol(values[4]) + stol(values[5]);  // idle + iowait
   }
+  return idlealltime;
 }
 
 // TODO: Read and return CPU utilization

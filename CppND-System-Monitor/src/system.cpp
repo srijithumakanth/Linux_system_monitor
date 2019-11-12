@@ -1,8 +1,7 @@
 #include <unistd.h>
 #include <cstddef>
 #include <set>
-#include <string>
-#include <vector>
+
 
 #include "linux_parser.h"  //
 #include "process.h"
@@ -21,12 +20,15 @@ Processor& System::Cpu() { return cpu_; }
 vector<Process>& System::Processes() {
   std::vector<int> pid = LinuxParser::Pids();
   processes_.clear();
+  
   for (int i = 0; i < pid.size(); i++) {
     Process p;
     p.Pid(pid[i]);
     processes_.push_back(p);
   }
-
+  
+  std::sort(processes_.begin(), processes_.end());
+  std::reverse(processes_.begin(), processes_.end());
   return processes_;
 }
 
