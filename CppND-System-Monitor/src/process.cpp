@@ -21,10 +21,10 @@ float Process::CpuUtilization() const {
 
   currentActive = LinuxParser::ActiveJiffies(pid_);
   double seconds = LinuxParser::UpTime() -
-                   ((LinuxParser::UpTime(pid_) / sysconf(_SC_CLK_TCK)));
+                   ((LinuxParser::UpTime(pid_) / cpuFreq));
 
   double delta = currentActive - lastActive;
-  float cpuUsage = ((delta / sysconf(_SC_CLK_TCK)) / seconds);
+  float cpuUsage = ((delta / cpuFreq) / seconds);
 
   lastActive = currentActive;
   

@@ -95,7 +95,7 @@ long LinuxParser::UpTime() {
   string line;
   string insec, idle;
   long sec;
-  
+
   std::ifstream stream(kProcDirectory + kUptimeFilename);
   if (stream.is_open()) {
     std::getline(stream, line);
@@ -103,8 +103,8 @@ long LinuxParser::UpTime() {
     linestream >> insec >> idle;  // Idle process time, maybe useful later.
     sec = std::stol(insec);
   }
-  return sec;      // Uptime in seconds
-} 
+  return sec;  // Uptime in seconds
+}
 
 // TODO: Read and return the number of jiffies for the system
 long LinuxParser::Jiffies() {
@@ -130,10 +130,9 @@ long LinuxParser::Jiffies() {
 // REMOVE: [[maybe_unused]] once you define the function
 long LinuxParser::ActiveJiffies(int pid) {
   std::ifstream stream(kProcDirectory + to_string(pid) + kStatFilename);
-  
+
   long totalTime;
-  if (stream.is_open())
-  {
+  if (stream.is_open()) {
     std::string line;
     getline(stream, line);
     std::istringstream buf(line);
@@ -194,11 +193,10 @@ int LinuxParser::TotalProcesses() {
     while (std::getline(stream, line)) {
       std::istringstream linestream(line);
       linestream >> key >> value;
-      if (key == "processes") {
-        return totalProcsRun = std::stof(value);
-      }
+      if (key == "processes") totalProcsRun = std::stoi(value);
     }
   }
+  return totalProcsRun;
 }
 
 // TODO: Read and return the number of running processes
@@ -212,10 +210,11 @@ int LinuxParser::RunningProcesses() {
       std::istringstream linestream(line);
       linestream >> key >> value;
       if (key == "procs_running") {
-        return numProcsRun = std::stof(value);
+        numProcsRun = std::stoi(value);
       }
     }
   }
+  return numProcsRun;
 }
 
 // TODO: Read and return the command associated with a process
@@ -226,9 +225,8 @@ string LinuxParser::Command(int pid) {
   string line;
   if (stream.is_open()) {
     getline(stream, line);
-
-    return line;
   }
+  return line;
 }
 
 // TODO: Read and return the memory used by a process
@@ -244,18 +242,17 @@ string LinuxParser::Ram(int pid) {
       linestream >> key >> value;
       if (key == "VmSize:") {
         ramKb = stoi(value);
+        ramMb = ramKb / 1000;
       }
     }
   }
-  ramMb = ramKb / 1000;
 
   return to_string(ramMb);
 }
 
 // TODO: Read and return the user ID associated with a process
 // REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Uid(int pid) { 
-  
+string LinuxParser::Uid(int pid) {
   string line, uid, userLine;
   string key, value, username, uservalue;
 
@@ -268,42 +265,44 @@ string LinuxParser::Uid(int pid) {
         uid = value;
       }
     }
-  return uid;
   }
+  return uid;
 }
 
 // TODO: Read and return the user associated with a process
 // REMOVE: [[maybe_unused]] once you define the function
 string LinuxParser::User(int pid) {
-
-  string userLine, username, uservalue;
+  string userLine, username, uservalue, uname;
   std::ifstream filestream(kPasswordPath);
+
   if (filestream.is_open()) {
     while (getline(filestream, userLine)) {
       std::replace(userLine.begin(), userLine.end(), ':', ' ');
       std::istringstream linestream(userLine);
-      while (linestream >> username >> uservalue >> uservalue) {
-        if (uservalue == LinuxParser::Uid(pid)) {
-          return username;
-        }
+      linestream >> username >> uservalue >> uservalue;
+      if (uservalue == Uid(pid)) {
+        uname = username;
       }
     }
   }
+  return uname;
 }
 
 // TODO: Read and return the uptime of a process
 // REMOVE: [[maybe_unused]] once you define the function
 long LinuxParser::UpTime(int pid) {
   std::ifstream stream(kProcDirectory + to_string(pid) + kStatFilename);
+  long int uptime, uptime_in_sec;
+  if (stream.is_open()) {
+    std::string line;
+    getline(stream, line);
+    std::istringstream buf(line);
+    std::istream_iterator<string> beg(buf), end;
+    std::vector<string> values(beg, end);
 
-  std::string line;
-  getline(stream, line);
-  std::istringstream buf(line);
-  std::istream_iterator<string> beg(buf), end;
-  std::vector<string> values(beg, end);
-
-  long int uptime = stol(values[21]);
-  long int uptime_in_sec = uptime / sysconf(_SC_CLK_TCK);
+    uptime = stol(values[21]);
+    uptime_in_sec = uptime / sysconf(_SC_CLK_TCK);
+  }
 
   return uptime_in_sec;
 }
