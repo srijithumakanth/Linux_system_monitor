@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "format.h"
 #include "linux_parser.h"
 #include "process.h"
 
