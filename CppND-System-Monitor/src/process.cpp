@@ -16,94 +16,33 @@ using std::vector;
 int Process::Pid() { return pid_; }
 
 // TODO: Return this process's CPU utilization
-float Process::CpuUtilization() { return 0; }
+float Process::CpuUtilization() {
+  double lastActive = 0, currentActive;
+  double cpuFreq = sysconf(_SC_CLK_TCK);
+
+  currentActive = LinuxParser::ActiveJiffies(pid_);
+  double seconds = LinuxParser::UpTime() -
+                   ((LinuxParser::UpTime(pid_) / sysconf(_SC_CLK_TCK)));
+
+  double delta = currentActive - lastActive;
+  float cpuUsage = 100 * ((delta / sysconf(_SC_CLK_TCK)) / seconds);
+
+  return cpuUsage;
+
+  lastActive = currentActive;
+}
 
 // TODO: Return the command that generated this process
-string Process::Command() {
-  std::ifstream stream(LinuxParser::kProcDirectory + to_string(pid_) +
-                       LinuxParser::kCmdlineFilename);
-
-  string line;
-  if (stream.is_open()) {
-    getline(stream, line);
-
-    return line;
-  }
-}
+string Process::Command() { return LinuxParser::Command(pid_); }
 
 // TODO: Return this process's memory utilization
-string Process::Ram() {
-  std::ifstream stream(LinuxParser::kProcDirectory + to_string(pid_) +
-                       LinuxParser::kStatusFilename);
-
-  string line, key, value;
-  int ramKb, ramMb;
-  if (stream.is_open())
-  {
-    while(getline(stream, line))
-    {
-      std::istringstream linestream(line);
-      linestream >> key >> value;
-      if(key == "VmSize:")
-      {
-        ramKb = stoi(value);
-      }
-    }
-  }
-  ramMb = ramKb / 1000;
-
-  return to_string(ramMb);
-}
+string Process::Ram() { return LinuxParser::Ram(pid_); }
 
 // TODO: Return the user (name) that generated this process
-string Process::User() {
-  string line, uid, userLine;
-  string key, value, username, uservalue;
-
-  std::ifstream stream(LinuxParser::kProcDirectory + to_string(pid_) +
-                       LinuxParser::kStatusFilename);
-  if (stream.is_open()) {
-    while (getline(stream, line)) {
-      std::istringstream linestream(line);
-      linestream >> key >> value;
-      if (key == "Uid:") {
-        uid = value;
-      }
-    }
-  }
-
-  std::ifstream filestream(LinuxParser::kPasswordPath);
-  if (filestream.is_open()) {
-    while (std::getline(filestream, userLine)) {
-      std::replace(userLine.begin(), userLine.end(), ':', ' ');
-      std::istringstream linestream(userLine);
-      while (linestream >> username >> uservalue >> uservalue) {
-        if (uservalue == uid) {
-          return username;
-        }
-      }
-    }
-  }
-}
+string Process::User() { return LinuxParser::User(pid_); }
 
 // TODO: Return the age of this process (in seconds)
-long int Process::UpTime() {
-  std::ifstream stream(LinuxParser::kProcDirectory + to_string(pid_) +
-                       LinuxParser::kStatFilename);
-
-  if (stream.is_open()) {
-    std::string line;
-    getline(stream, line);
-    std::istringstream buf(line);
-    std::istream_iterator<string> beg(buf), end;
-    std::vector<string> values(beg, end);
-
-    long int uptime = stol(values[21]);
-    long int uptime_in_sec = uptime / sysconf(_SC_CLK_TCK);
-
-    return uptime_in_sec;
-  }
-}
+long int Process::UpTime() { return LinuxParser::UpTime(pid_); }
 
 // TODO: Overload the "less than" comparison operator for Process objects
 // REMOVE: [[maybe_unused]] once you define the function
